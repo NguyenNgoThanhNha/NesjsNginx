@@ -1,0 +1,179 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id           String    @id @default(uuid())
+  email        String    @unique
+  password     String
+  phone        String?
+  name         String
+  avatar       String
+  typeLogin    String
+  created_at   DateTime  @default(now())
+  created_by   String?
+  created_name String?
+  updated_at   DateTime? @updatedAt
+  updated_by   String?
+  updated_name String?
+  isDeleted    Boolean   @default(false)
+
+  // Relations
+  requester          FriendShip[]         @relation("RequesterRelation")
+  addresser          FriendShip[]         @relation("AddresserRelation")
+  memory             Memory[]             @relation("UserMemory")
+  author             Post[]               @relation("AuthorPost")
+  memoryContribution MemoryContribution[] @relation("UserContribution")
+  memoryMembers      MemoryMember[]       @relation("UserMemoryMember")
+  postInteractions   PostInteraction[]    @relation("UserPostInteraction")
+}
+
+model FriendShip {
+  id           String    @id @default(uuid())
+  requestId    String?
+  addresseeId  String?
+  status       Status
+  created_at   DateTime  @default(now())
+  created_by   String?
+  created_name String?
+  updated_at   DateTime? @updatedAt
+  updated_by   String?
+  updated_name String?
+  isDeleted    Boolean   @default(false)
+  requester    User?     @relation("RequesterRelation", fields: [requestId], references: [id])
+  addresser    User?     @relation("AddresserRelation", fields: [addresseeId], references: [id])
+}
+
+model Memory {
+  id           String       @id @default(uuid())
+  ownerId      String
+  title        String
+  description  String?
+  thumbnailUrl String?
+  fileSize     BigInt?
+  pageCount    Int          @default(0)
+  outputType   String?
+  status       MemoryStatus
+  created_at   DateTime
+  created_by   String?
+  created_name String?
+  updated_at   DateTime?
+  updated_by   String?
+  updated_name String?
+  isDeleted    Boolean      @default(false)
+
+  owner              User                 @relation("UserMemory", fields: [ownerId], references: [id])
+  post               Post[]               @relation("MemoryPost")
+  memoryContribution MemoryContribution[] @relation("MemoryContribution")
+  memoryMembers      MemoryMember[]       @relation("MemoryMemberRelation")
+}
+
+model Post {
+  id           String     @id @default(uuid())
+  memoryId     String
+  authorId     String
+  caption      String
+  numberOfLike Int
+  visibility   Visibility
+  created_at   DateTime
+  created_by   String?
+  created_name String?
+  updated_at   DateTime?
+  updated_by   String?
+  updated_name String?
+  isDeleted    Boolean    @default(false)
+
+  memory       Memory            @relation("MemoryPost", fields: [memoryId], references: [id])
+  author       User              @relation("AuthorPost", fields: [authorId], references: [id])
+  interactions PostInteraction[]
+}
+
+model MemoryContribution {
+  id           String                 @id @default(uuid())
+  memoryId     String
+  userId       String
+  type         MemoryContributionType
+  contentUrl   String
+  textContent  String
+  created_at   DateTime
+  created_by   String?
+  created_name String?
+  updated_at   DateTime?
+  updated_by   String?
+  updated_name String?
+  isDeleted    Boolean                @default(false)
+
+  memory Memory @relation("MemoryContribution", fields: [memoryId], references: [id])
+  user   User   @relation("UserContribution", fields: [userId], references: [id])
+}
+
+model MemoryMember {
+  id           String           @id @default(uuid())
+  memoryId     String
+  userId       String
+  role         MemoryMemberRole
+  joinAt       DateTime
+  created_at   DateTime
+  created_by   String?
+  created_name String?
+  updated_at   DateTime?
+  updated_by   String?
+  updated_name String?
+  isDeleted    Boolean          @default(false)
+
+  memory Memory @relation("MemoryMemberRelation", fields: [memoryId], references: [id])
+  user   User   @relation("UserMemoryMember", fields: [userId], references: [id])
+}
+
+model PostInteraction {
+  id           String              @id @default(uuid())
+  postId       String
+  userId       String
+  type         PostInteractionType
+  created_at   DateTime
+  created_by   String?
+  created_name String?
+  updated_at   DateTime?
+  updated_by   String?
+  updated_name String?
+  isDeleted    Boolean             @default(false)
+
+  post Post @relation(fields: [postId], references: [id])
+  user User @relation("UserPostInteraction", fields: [userId], references: [id])
+}
+
+enum Status {
+  Pending
+  Accepted
+  Blocked
+}
+
+enum MemoryStatus {
+  Draft
+  Finished
+}
+
+enum Visibility {
+  Public
+  Friend
+  Private
+}
+
+enum MemoryContributionType {
+  Image
+  Text
+}
+
+enum MemoryMemberRole {
+  Owner
+  Contributer
+}
+
+enum PostInteractionType {
+  Like
+}
